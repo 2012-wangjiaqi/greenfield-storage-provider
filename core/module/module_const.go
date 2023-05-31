@@ -8,7 +8,7 @@ var (
 	ApprovalModularName             = strings.ToLower("Approval")
 	ApprovalModularDescription      = "Handles the ask crate bucket/object and replicates piece approval request."
 	AuthorizationModularName        = strings.ToLower("Authorizer")
-	AuthorizationModularDescription = "Checks authorizations."
+	AuthorizationModularDescription = "Checks the account authentication for the operator."
 	DownloadModularName             = strings.ToLower("Downloader")
 	DownloadModularDescription      = "Downloads object and gets challenge info and statistical read traffic from the backend."
 	ExecuteModularName              = strings.ToLower("TaskExecutor")

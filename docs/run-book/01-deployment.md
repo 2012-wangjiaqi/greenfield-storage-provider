@@ -59,16 +59,18 @@ Build   : go1.20.1 darwin amd64 2023-03-04 23:54
 ```shell
 # show services list
 ./gnfd-sp list
-auth                 Handle off chain auth requests
-blocksyncer          Syncs block data to db
-challenge            Provides the ability to query the integrity hash and piece data
-downloader           Downloads object from the backend and statistical read traffic
-gateway              Receives the sdk request
-metadata             Provides the ability to query meta data
-receiver             Receives data pieces of an object from other storage provider and store
-signer               Sign the transaction and broadcast to chain
-tasknode             Executes background task
-uploader             Uploads object payload to greenfield
+approval             Handles the ask crate bucket/object and replicates piece approval request.
+authorizer           Checks authorizations.
+blocksyncer          Synchronize data on the chain to SP
+downloader           Downloads object and gets challenge info and statistical read traffic from the backend.
+gateway              Receives the user request and routes to the responding service.
+manager              Manages SPs and schedules tasks.
+metadata             Retrieves sp metadata and info.
+p2p                  Communicates between SPs on p2p protocol.
+receiver             Receives data pieces of an object from other storage provider and store.
+signer               Signs the transaction and broadcasts to chain.
+taskexecutor         Executes background tasks.
+uploader             Uploads object payload to primary SP.
 
 
 # start 

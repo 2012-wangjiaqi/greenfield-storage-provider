@@ -42,7 +42,7 @@ Infrastructure interface includes:
   to the order of task arrival, so task queue is a relatively important basic interface 
   used by all modules inside SP.
 
-### Special Modular
+### Common Module
 * [Approver](./module/README.md) : Approver is the modular to handle ask approval request, 
   handles CreateBucketApproval and CreateObjectApproval.
 * [Authorizer](./module/README.md): Authorizer is the modular to authority verification.
@@ -67,7 +67,7 @@ Infrastructure interface includes:
 * [Uploader](./module/README.md): Uploader is the modular to handle put object request from user 
   account, and store it in primary SP's piece store.
 
-### Common Modular
+### Customized Module
 In addition to the modular specified above, developers can also customize own modular, 
 just implement the [Moduler](./module/modular.go) interface and register it to GfSp.
 
@@ -91,7 +91,7 @@ gfsp.Start(ctx)
 // the GfSp framework will replace the default PieceStore with CustomizedPieceStore
 ```
 
-## Customized Special Modular
+## Customized Module
 ```go
 // new your own CustomizedApprover instance that implement the Approver interface
 //  NewCustomizedApprover must be func type: 

@@ -1,5 +1,5 @@
 # Metadata
-Metadata service is to supply better query service for the Inscription network. Users can interact with SP for some complex query services.
+Metadata service is to supply better query service for the greenfield network. Users can interact with SP for some complex query services.
 Some interfaces can be costly to implement on the chain or can cause significant latency.
 metadata service is designed to implement the corresponding interface under the chain and provide it to the SP to achieve high performance and low latency.
 The events' data are optimally stored by the block syncer and provided to the metadata.

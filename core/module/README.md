@@ -1,6 +1,6 @@
-# Modular
+# Module
 
-Modular is a complete logical module of SP. The GfSp framework is responsible 
+Module is a complete logical module of SP. The GfSp framework is responsible 
 for the necessary interaction between modules. As for the implementation 
 of the module, it can be customized. Example, The GfSp framework stipulates 
 that ask object approval must be carried out before uploading an object, 
