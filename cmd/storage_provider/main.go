@@ -99,6 +99,8 @@ func init() {
 		command.ConfigDumpCmd,
 		// query category commands
 		command.QueryTaskCmd,
+		command.GetObjectCmd,
+		command.ChallengePieceCmd,
 		// p2p category commands
 		command.P2PCreateKeysCmd,
 		// miscellaneous category commands

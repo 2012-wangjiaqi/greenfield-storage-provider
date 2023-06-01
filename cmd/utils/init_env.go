@@ -6,6 +6,7 @@ import (
 
 	"github.com/bnb-chain/greenfield-storage-provider/base/gfspapp"
 	"github.com/bnb-chain/greenfield-storage-provider/base/gfspclient"
+	"github.com/bnb-chain/greenfield-storage-provider/base/gnfd"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/urfave/cli/v2"
@@ -135,4 +136,18 @@ func MakeGfSpClient(cfg *gfspconfig.GfSpConfig) *gfspclient.GfSpClient {
 		cfg.Endpoint.AuthorizerEndpoint,
 		false)
 	return client
+}
+
+func MakeGnfd(cfg *gfspconfig.GfSpConfig) (*gnfd.Gnfd, error) {
+	if len(cfg.Chain.ChainID) == 0 {
+		cfg.Chain.ChainID = gfspapp.DefaultChainID
+	}
+	if len(cfg.Chain.ChainAddress) == 0 {
+		cfg.Chain.ChainAddress = []string{gfspapp.DefaultChainAddress}
+	}
+	gnfdCfg := &gnfd.GnfdChainConfig{
+		ChainID:      cfg.Chain.ChainID,
+		ChainAddress: cfg.Chain.ChainAddress,
+	}
+	return gnfd.NewGnfd(gnfdCfg)
 }

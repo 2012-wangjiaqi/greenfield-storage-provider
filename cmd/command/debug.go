@@ -12,10 +12,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	DebugCommandPrefix = "gfsp-debug"
+)
+
 var DebugCreateBucketApprovalCmd = &cli.Command{
-	Action:   createBucketApproval,
-	Name:     "debug.create.bucket.approval",
-	Usage:    "Create random CreateBucketApproval and send to approver for debugging and testing",
+	Action: createBucketApproval,
+	Name:   "debug.create.bucket.approval",
+	Usage:  "Create random CreateBucketApproval and send to approver for debugging and testing",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+	},
 	Category: "DEBUG COMMANDS",
 	Description: `The debug.create.bucket.approval command create a random 
 CreateBucketApproval request and send it to approver for debugging and testing
@@ -31,7 +38,8 @@ func createBucketApproval(ctx *cli.Context) error {
 	client := utils.MakeGfSpClient(cfg)
 
 	msg := &storagetypes.MsgCreateBucket{
-		BucketName: util.GetRandomBucketName(),
+		BucketName:        DebugCommandPrefix + util.GetRandomBucketName(),
+		PrimarySpApproval: &storagetypes.Approval{},
 	}
 	task := &gfsptask.GfSpCreateBucketApprovalTask{}
 	task.InitApprovalCreateBucketTask(msg, coretask.UnSchedulingPriority)
@@ -42,15 +50,18 @@ func createBucketApproval(ctx *cli.Context) error {
 	if !allow {
 		return fmt.Errorf("refuse create bucket approval")
 	}
-	fmt.Printf("succeed to ask create bucket approval, BucketName: %s, ExpiredHeight: %d",
+	fmt.Printf("succeed to ask create bucket approval, BucketName: %s, ExpiredHeight: %d \n",
 		res.GetCreateBucketInfo().GetBucketName(), res.GetCreateBucketInfo().GetPrimarySpApproval().GetExpiredHeight())
 	return nil
 }
 
 var DebugCreateObjectApprovalCmd = &cli.Command{
-	Action:   createObjectApproval,
-	Name:     "debug.create.object.approval",
-	Usage:    "Create random CreateObjectApproval and send to approver for debugging and testing",
+	Action: createObjectApproval,
+	Name:   "debug.create.object.approval",
+	Usage:  "Create random CreateObjectApproval and send to approver for debugging and testing",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+	},
 	Category: "DEBUG COMMANDS",
 	Description: `The debug.create.object.approval command create a random 
 CreateObjectApproval request and send it to approver for debugging and testing
@@ -66,8 +77,9 @@ func createObjectApproval(ctx *cli.Context) error {
 	client := utils.MakeGfSpClient(cfg)
 
 	msg := &storagetypes.MsgCreateObject{
-		ObjectName: util.GetRandomObjectName(),
-		BucketName: util.GetRandomBucketName(),
+		BucketName:        DebugCommandPrefix + util.GetRandomBucketName(),
+		ObjectName:        DebugCommandPrefix + util.GetRandomObjectName(),
+		PrimarySpApproval: &storagetypes.Approval{},
 	}
 	task := &gfsptask.GfSpCreateObjectApprovalTask{}
 	task.InitApprovalCreateObjectTask(msg, coretask.UnSchedulingPriority)
@@ -78,7 +90,7 @@ func createObjectApproval(ctx *cli.Context) error {
 	if !allow {
 		return fmt.Errorf("refuse create object approval")
 	}
-	fmt.Printf("succeed to ask create object approval, BucketName: %s, ObjectName: %s, ExpiredHeight: %d",
+	fmt.Printf("succeed to ask create object approval, BucketName: %s, ObjectName: %s, ExpiredHeight: %d \n",
 		res.GetCreateObjectInfo().GetBucketName(), res.GetCreateObjectInfo().GetBucketName(),
 		res.GetCreateObjectInfo().GetPrimarySpApproval().GetExpiredHeight())
 	return nil
