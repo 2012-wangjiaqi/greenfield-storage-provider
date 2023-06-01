@@ -109,6 +109,7 @@ func init() {
 		// debug commands
 		command.DebugCreateBucketApprovalCmd,
 		command.DebugCreateObjectApprovalCmd,
+		command.DebugReplicateApprovalCmd,
 	}
 	registerModular()
 }

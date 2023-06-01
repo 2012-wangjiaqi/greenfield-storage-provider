@@ -9,6 +9,7 @@ import (
 	coretask "github.com/bnb-chain/greenfield-storage-provider/core/task"
 	"github.com/bnb-chain/greenfield-storage-provider/util"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -93,5 +94,45 @@ func createObjectApproval(ctx *cli.Context) error {
 	fmt.Printf("succeed to ask create object approval, BucketName: %s, ObjectName: %s, ExpiredHeight: %d \n",
 		res.GetCreateObjectInfo().GetBucketName(), res.GetCreateObjectInfo().GetBucketName(),
 		res.GetCreateObjectInfo().GetPrimarySpApproval().GetExpiredHeight())
+	return nil
+}
+
+var DebugReplicateApprovalCmd = &cli.Command{
+	Action: replicatePieceApprovalAction,
+	Name:   "debug.ask.replicate.approval",
+	Usage:  "Create random ObjectInfo and send to p2p for debugging and testing p2p protocol network",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+	},
+	Category: "DEBUG COMMANDS",
+	Description: `The debug.ask.replicate.approval command create a random 
+ObjectInfo and send it to p2p node for debugging and testing p2p protocol 
+networkthe Dev Env.`,
+}
+
+// createBucketApproval is the debug.create.bucket.approval command action.
+func replicatePieceApprovalAction(ctx *cli.Context) error {
+	cfg, err := utils.MakeConfig(ctx)
+	if err != nil {
+		return err
+	}
+	client := utils.MakeGfSpClient(cfg)
+
+	objectInfo := &storagetypes.ObjectInfo{
+		Id:         sdk.NewUint(uint64(util.RandInt64(0, 100000))),
+		BucketName: DebugCommandPrefix + util.GetRandomBucketName(),
+		ObjectName: DebugCommandPrefix + util.GetRandomObjectName(),
+	}
+	task := &gfsptask.GfSpReplicatePieceApprovalTask{}
+	task.InitApprovalReplicatePieceTask(objectInfo, &storagetypes.Params{},
+		coretask.UnSchedulingPriority, GfSpCliUserName)
+	approvals, err := client.AskSecondaryReplicatePieceApproval(
+		context.Background(), task, 6, 12, 10)
+	if err != nil {
+		return err
+	}
+	for _, approval := range approvals {
+		fmt.Printf("%s accepted \n", approval.GetApprovedSpOperatorAddress())
+	}
 	return nil
 }
