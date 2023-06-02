@@ -103,7 +103,7 @@ func init() {
 		command.QueryTaskCmd,
 		command.GetObjectCmd,
 		command.ChallengePieceCmd,
-		command.GetPieceIntegrityCmd,
+		command.GetSegmentIntegrityCmd,
 		// p2p category commands
 		command.P2PCreateKeysCmd,
 		// miscellaneous category commands

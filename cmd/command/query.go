@@ -264,70 +264,10 @@ func challengePieceAction(ctx *cli.Context) error {
 	return nil
 }
 
-var GetPieceIntegrityCmd = &cli.Command{
-	Action: getPieceIntegrityAction,
-	Name:   "get.piece.integrity",
-	Usage:  "Get secondary sp piece integrity hash and signature",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		objectIDFlag,
-	},
-	Category: "QUERY COMMANDS",
-	Description: `The get.piece.integrity command send rpc request to receiver 
-get integrity hash and signature for checking whether receive is completed`,
-}
-
-func getPieceIntegrityAction(ctx *cli.Context) error {
-	cfg, err := utils.MakeConfig(ctx)
-	if err != nil {
-		return err
-	}
-	client := utils.MakeGfSpClient(cfg)
-
-	chain, err := utils.MakeGnfd(cfg)
-	if err != nil {
-		return err
-	}
-
-	objectID := ctx.String(objectIDFlag.Name)
-	objectInfo, err := chain.QueryObjectInfoByID(context.Background(), objectID)
-	if err != nil {
-		return fmt.Errorf("failed to query object info, error: %v", err)
-	}
-	params, err := chain.QueryStorageParamsByTimestamp(context.Background(), objectInfo.GetCreateAt())
-	if err != nil {
-		return fmt.Errorf("failed to query storage params, error: %v", err)
-	}
-
-	var replicateIdx uint32
-	var found bool
-	for i, addr := range objectInfo.GetSecondarySpAddresses() {
-		if strings.EqualFold(addr, cfg.SpAccount.SpOperateAddress) {
-			replicateIdx = uint32(i)
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("%s is not the object secondary sp", cfg.SpAccount.SpOperateAddress)
-	}
-
-	task := &gfsptask.GfSpReceivePieceTask{}
-	task.InitReceivePieceTask(objectInfo, params,
-		coretask.UnSchedulingPriority, replicateIdx, -1, 0)
-	integrity, signature, err := client.DoneReplicatePiece(context.Background(), task)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("succeed get piece integrity, integrity_hash[%s], signature[%s]",
-		hex.EncodeToString(integrity), hex.EncodeToString(signature))
-	return nil
-}
-
 var GetSegmentIntegrityCmd = &cli.Command{
 	Action: getSegmentIntegrityAction,
-	Name:   "get.segment.integrity",
-	Usage:  "Get secondary sp segment integrity hash and signature",
+	Name:   "get.piece.integrity",
+	Usage:  "Get piece integrity hash and signature",
 	Flags: []cli.Flag{
 		utils.ConfigFileFlag,
 		objectIDFlag,
@@ -346,7 +286,23 @@ func getSegmentIntegrityAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	chain, err := utils.MakeGnfd(cfg)
+	if err != nil {
+		return err
+	}
 	objectIDStr := ctx.String(objectIDFlag.Name)
+	objectInfo, err := chain.QueryObjectInfoByID(context.Background(), objectIDStr)
+	if err != nil {
+		return fmt.Errorf("failed to query object info, error: %v", err)
+	}
+
+	replicateIdx := -1
+	for i, addr := range objectInfo.GetSecondarySpAddresses() {
+		if strings.EqualFold(addr, cfg.SpAccount.SpOperateAddress) {
+			replicateIdx = i
+			break
+		}
+	}
 
 	objectID, err := strconv.ParseUint(objectIDStr, 10, 64)
 	if err != nil {
@@ -356,12 +312,11 @@ func getSegmentIntegrityAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("succeed to get segment integrity:\n\n integrity_hash[%s]\n",
-		hex.EncodeToString(integrity.IntegrityChecksum))
-
+	fmt.Printf("succeed to get segment integrity:\n\nreplicateIdx[%d], integrity_hash[%s]\n\n",
+		replicateIdx, hex.EncodeToString(integrity.IntegrityChecksum))
 	for i, checksum := range integrity.PieceChecksumList {
 		fmt.Printf("piece[%d], checksum[%s]\n", i, hex.EncodeToString(checksum))
 	}
-	fmt.Printf("signature[%s]\n", hex.EncodeToString(integrity.Signature))
+	fmt.Printf("\nsignature[%s]\n", hex.EncodeToString(integrity.Signature))
 	return nil
 }
