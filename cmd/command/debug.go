@@ -1,8 +1,10 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/bnb-chain/greenfield-storage-provider/base/types/gfsptask"
 	"github.com/bnb-chain/greenfield-storage-provider/cmd/utils"
@@ -109,7 +111,7 @@ var DebugReplicateApprovalCmd = &cli.Command{
 	Category: "DEBUG COMMANDS",
 	Description: `The debug.ask.replicate.approval command create a random 
 ObjectInfo and send it to p2p node for debugging and testing p2p protocol 
-networkthe Dev Env.`,
+network on Dev Env.`,
 }
 
 // createBucketApproval is the debug.create.bucket.approval command action.
@@ -148,5 +150,59 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 		}
 		fmt.Printf("%s[%s] accepted\n", approval.GetApprovedSpOperatorAddress(), spInfo.GetEndpoint())
 	}
+	return nil
+}
+
+var file = &cli.StringFlag{
+	Name:     "f",
+	Usage:    "The file of uploading",
+	Required: true,
+}
+
+var DebugPutObjectCmd = &cli.Command{
+	Action: putObjectAction,
+	Name:   "debug.put.object",
+	Usage:  "Create random ObjectInfo and send to uploader for debugging and testing uploading primary sp",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		file,
+	},
+	Category: "DEBUG COMMANDS",
+	Description: `The debug.put.object command create a random ObjectInfo 
+and send it to uploader for debugging and testing upload primary sp on Dev Env.`,
+}
+
+func putObjectAction(ctx *cli.Context) error {
+	cfg, err := utils.MakeConfig(ctx)
+	if err != nil {
+		return err
+	}
+	client := utils.MakeGfSpClient(cfg)
+	filePath := ctx.String(file.Name)
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	objectInfo := &storagetypes.ObjectInfo{
+		Id:          sdk.NewUint(uint64(util.RandInt64(0, 100000))),
+		BucketName:  DebugCommandPrefix + util.GetRandomBucketName(),
+		ObjectName:  filePath,
+		PayloadSize: uint64(len(data)),
+	}
+	params := &storagetypes.Params{
+		VersionedParams: storagetypes.VersionedParams{
+			MaxSegmentSize:          16 * 1024 * 1024,
+			RedundantDataChunkNum:   4,
+			RedundantParityChunkNum: 2,
+		},
+	}
+	stream := bytes.NewReader(data)
+	task := &gfsptask.GfSpUploadObjectTask{}
+	task.InitUploadObjectTask(objectInfo, params, 0)
+	err = client.UploadObject(context.Background(), task, stream)
+	if err != nil {
+		return fmt.Errorf("failed to upload %d to uploader, error: %v", filePath, err)
+	}
+	fmt.Printf("succeed to upload %d, len %d to uploader", filePath, len(data))
 	return nil
 }
