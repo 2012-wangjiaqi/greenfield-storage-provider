@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/bnb-chain/greenfield-common/go/hash"
+	"github.com/bnb-chain/greenfield-storage-provider/base/types/gfsperrors"
 	"github.com/bnb-chain/greenfield-storage-provider/base/types/gfsptask"
 	coretask "github.com/bnb-chain/greenfield-storage-provider/core/task"
 	"github.com/urfave/cli/v2"
@@ -22,6 +25,37 @@ import (
 const (
 	GfSpCliUserName = "gfsp-cli"
 )
+
+var ListModularCmd = &cli.Command{
+	Action:      listModularAction,
+	Name:        "list.modules",
+	Usage:       "List the modules in greenfield storage provider",
+	Category:    "QUERY COMMANDS",
+	Description: `The list command output the services in greenfield storage provider.`,
+}
+
+func listModularAction(ctx *cli.Context) error {
+	fmt.Print(gfspapp.GetRegisterModulusDescription())
+	return nil
+}
+
+var ListErrorsCmd = &cli.Command{
+	Action:      listErrorsAction,
+	Name:        "list.errors",
+	Usage:       "List the predefine errors in greenfield storage provider",
+	Category:    "QUERY COMMANDS",
+	Description: `The list command output the services in greenfield storage provider.`,
+}
+
+func listErrorsAction(ctx *cli.Context) error {
+	gfspErrors := gfsperrors.GfSpErrorList()
+	var errInfo string
+	for _, gfspError := range gfspErrors {
+		fmt.Printf(gfspError.String() + "\n")
+	}
+	fmt.Printf(errInfo)
+	return nil
+}
 
 var endpointFlag = &cli.StringFlag{
 	Name:  "n",
@@ -121,7 +155,7 @@ func getObjectAction(ctx *cli.Context) error {
 	}
 	bucketInfo, err := chain.QueryBucketInfo(context.Background(), objectInfo.GetBucketName())
 	if err != nil {
-		return fmt.Errorf("failed to query object info, error: %v", err)
+		return fmt.Errorf("failed to query bucket info, error: %v", err)
 	}
 	params, err := chain.QueryStorageParamsByTimestamp(context.Background(), objectInfo.GetCreateAt())
 	if err != nil {
@@ -137,7 +171,10 @@ func getObjectAction(ctx *cli.Context) error {
 	if err = os.WriteFile("./"+objectInfo.GetObjectName(), data, os.ModePerm); err != nil {
 		fmt.Printf("failed to create file to wirte object payload data, error: %v", err)
 	}
-	fmt.Printf("succeed to get object\n BucketInfo: %s\n ObjectInfo: %s \nStorageParam: %s\n",
+	fmt.Printf("succeed to get object\n\n"+
+		"BucketInfo: %s\n\n "+
+		"ObjectInfo: %s \n\n"+
+		"StorageParam: %s\n\n",
 		bucketInfo.String(), objectInfo.String(), params.String())
 	return nil
 }
@@ -166,7 +203,7 @@ var ChallengePieceCmd = &cli.Command{
 	},
 	Category: "QUERY COMMANDS",
 	Description: `The challenge.piece command send rpc request to downloader 
-get integrity meta and check the piece checksums`,
+get integrity meta and check the piece checksums.`,
 }
 
 func challengePieceAction(ctx *cli.Context) error {
@@ -187,7 +224,7 @@ func challengePieceAction(ctx *cli.Context) error {
 	}
 	bucketInfo, err := chain.QueryBucketInfo(context.Background(), objectInfo.GetBucketName())
 	if err != nil {
-		return fmt.Errorf("failed to query object info, error: %v", err)
+		return fmt.Errorf("failed to query bucket info, error: %v", err)
 	}
 	params, err := chain.QueryStorageParamsByTimestamp(context.Background(), objectInfo.GetCreateAt())
 	if err != nil {
@@ -210,7 +247,7 @@ func challengePieceAction(ctx *cli.Context) error {
 		fmt.Printf("piece[%d] checksum[%s]\n", i, hex.EncodeToString(checksum))
 	}
 	challengePieceChecksum := hash.GenerateChecksum(data)
-	fmt.Printf("\nchallenge piece info: replicate_idx[%d], segment_idx[%d], piece_checksum[%s]\n\n",
+	fmt.Printf("\nchallenge piece info\n: replicate_idx[%d], segment_idx[%d], piece_checksum[%s]\n\n",
 		replicateIdx, segmentIdx, hex.EncodeToString(challengePieceChecksum))
 
 	if !bytes.Equal(challengePieceChecksum, checksums[segmentIdx]) {
@@ -223,6 +260,108 @@ func challengePieceAction(ctx *cli.Context) error {
 			hex.EncodeToString(integrityHash),
 			hex.EncodeToString(hash.GenerateIntegrityHash(checksums)))
 	}
-	fmt.Printf("succeed to check integrity hash")
+	fmt.Printf("succeed to check integrity hash!!!\n")
+	return nil
+}
+
+var GetPieceIntegrityCmd = &cli.Command{
+	Action: getPieceIntegrityAction,
+	Name:   "get.piece.integrity",
+	Usage:  "Get secondary sp piece integrity hash and signature",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		objectIDFlag,
+	},
+	Category: "QUERY COMMANDS",
+	Description: `The get.piece.integrity command send rpc request to receiver 
+get integrity hash and signature for checking whether receive is completed`,
+}
+
+func getPieceIntegrityAction(ctx *cli.Context) error {
+	cfg, err := utils.MakeConfig(ctx)
+	if err != nil {
+		return err
+	}
+	client := utils.MakeGfSpClient(cfg)
+
+	chain, err := utils.MakeGnfd(cfg)
+	if err != nil {
+		return err
+	}
+
+	objectID := ctx.String(objectIDFlag.Name)
+	objectInfo, err := chain.QueryObjectInfoByID(context.Background(), objectID)
+	if err != nil {
+		return fmt.Errorf("failed to query object info, error: %v", err)
+	}
+	params, err := chain.QueryStorageParamsByTimestamp(context.Background(), objectInfo.GetCreateAt())
+	if err != nil {
+		return fmt.Errorf("failed to query storage params, error: %v", err)
+	}
+
+	var replicateIdx uint32
+	var found bool
+	for i, addr := range objectInfo.GetSecondarySpAddresses() {
+		if strings.EqualFold(addr, cfg.SpAccount.SpOperateAddress) {
+			replicateIdx = uint32(i)
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("%s is not the object secondary sp", cfg.SpAccount.SpOperateAddress)
+	}
+
+	task := &gfsptask.GfSpReceivePieceTask{}
+	task.InitReceivePieceTask(objectInfo, params,
+		coretask.UnSchedulingPriority, replicateIdx, -1, 0)
+	integrity, signature, err := client.DoneReplicatePiece(context.Background(), task)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("succeed get piece integrity, integrity_hash[%s], signature[%s]",
+		hex.EncodeToString(integrity), hex.EncodeToString(signature))
+	return nil
+}
+
+var GetSegmentIntegrityCmd = &cli.Command{
+	Action: getSegmentIntegrityAction,
+	Name:   "get.segment.integrity",
+	Usage:  "Get secondary sp segment integrity hash and signature",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		objectIDFlag,
+	},
+	Category: "QUERY COMMANDS",
+	Description: `The get.segment.integrity command send rpc request to spdb 
+get integrity hash and signature.`,
+}
+
+func getSegmentIntegrityAction(ctx *cli.Context) error {
+	cfg, err := utils.MakeConfig(ctx)
+	if err != nil {
+		return err
+	}
+	db, err := utils.MakeSPDB(cfg)
+	if err != nil {
+		return err
+	}
+	objectIDStr := ctx.String(objectIDFlag.Name)
+
+	objectID, err := strconv.ParseUint(objectIDStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	integrity, err := db.GetObjectIntegrity(objectID)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("succeed to get segment integrity:\n\n integrity_hash[%s]\n",
+		hex.EncodeToString(integrity.IntegrityChecksum))
+
+	for i, checksum := range integrity.PieceChecksumList {
+		fmt.Printf("piece[%d], checksum[%s]\n", i, hex.EncodeToString(checksum))
+	}
+	fmt.Printf("signature[%s]\n", hex.EncodeToString(integrity.Signature))
 	return nil
 }

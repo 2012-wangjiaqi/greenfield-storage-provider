@@ -135,7 +135,7 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("receive %d accepted approvals", len(approvals))
+	fmt.Printf("receive %d accepted approvals\n", len(approvals))
 
 	db, err := utils.MakeSPDB(cfg)
 	if err != nil {
@@ -146,7 +146,7 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s accepted, domain %s\n", approval.GetApprovedSpOperatorAddress(), spInfo.GetEndpoint())
+		fmt.Printf("%s[%s] accepted\n", approval.GetApprovedSpOperatorAddress(), spInfo.GetEndpoint())
 	}
 	return nil
 }
