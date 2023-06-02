@@ -6,6 +6,7 @@ import (
 
 	"github.com/bnb-chain/greenfield-storage-provider/base/types/gfsptask"
 	"github.com/bnb-chain/greenfield-storage-provider/cmd/utils"
+	"github.com/bnb-chain/greenfield-storage-provider/core/spdb"
 	coretask "github.com/bnb-chain/greenfield-storage-provider/core/task"
 	"github.com/bnb-chain/greenfield-storage-provider/util"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	DebugCommandPrefix = "gfsp-debug"
+	DebugCommandPrefix = "gfsp-cli-debug-"
 )
 
 var DebugCreateBucketApprovalCmd = &cli.Command{
@@ -103,6 +104,7 @@ var DebugReplicateApprovalCmd = &cli.Command{
 	Usage:  "Create random ObjectInfo and send to p2p for debugging and testing p2p protocol network",
 	Flags: []cli.Flag{
 		utils.ConfigFileFlag,
+		number,
 	},
 	Category: "DEBUG COMMANDS",
 	Description: `The debug.ask.replicate.approval command create a random 
@@ -126,13 +128,25 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 	task := &gfsptask.GfSpReplicatePieceApprovalTask{}
 	task.InitApprovalReplicatePieceTask(objectInfo, &storagetypes.Params{},
 		coretask.UnSchedulingPriority, GfSpCliUserName)
+
+	expectNumber := ctx.Int(number.Name)
 	approvals, err := client.AskSecondaryReplicatePieceApproval(
-		context.Background(), task, 6, 12, 10)
+		context.Background(), task, expectNumber, expectNumber, 10)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("receive %d accepted approvals", len(approvals))
+
+	db, err := utils.MakeSPDB(cfg)
 	if err != nil {
 		return err
 	}
 	for _, approval := range approvals {
-		fmt.Printf("%s accepted \n", approval.GetApprovedSpOperatorAddress())
+		spInfo, err := db.GetSpByAddress(approval.GetApprovedSpOperatorAddress(), spdb.OperatorAddressType)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s accepted, domain %s\n", approval.GetApprovedSpOperatorAddress(), spInfo.GetEndpoint())
 	}
 	return nil
 }

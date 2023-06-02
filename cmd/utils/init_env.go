@@ -7,6 +7,8 @@ import (
 	"github.com/bnb-chain/greenfield-storage-provider/base/gfspapp"
 	"github.com/bnb-chain/greenfield-storage-provider/base/gfspclient"
 	"github.com/bnb-chain/greenfield-storage-provider/base/gnfd"
+	"github.com/bnb-chain/greenfield-storage-provider/core/spdb"
+	"github.com/bnb-chain/greenfield-storage-provider/store/sqldb"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/urfave/cli/v2"
@@ -150,4 +152,37 @@ func MakeGnfd(cfg *gfspconfig.GfSpConfig) (*gnfd.Gnfd, error) {
 		ChainAddress: cfg.Chain.ChainAddress,
 	}
 	return gnfd.NewGnfd(gnfdCfg)
+}
+
+func MakeSPDB(cfg *gfspconfig.GfSpConfig) (spdb.SPDB, error) {
+	if val, ok := os.LookupEnv(sqldb.SpDBUser); ok {
+		cfg.SpDB.User = val
+	}
+	if val, ok := os.LookupEnv(sqldb.SpDBPasswd); ok {
+		cfg.SpDB.Passwd = val
+	}
+	if val, ok := os.LookupEnv(sqldb.SpDBAddress); ok {
+		cfg.SpDB.Address = val
+	}
+	if val, ok := os.LookupEnv(sqldb.SpDBDataBase); ok {
+		cfg.SpDB.Database = val
+	}
+	if cfg.SpDB.User == "" {
+		cfg.SpDB.User = "root"
+	}
+	if cfg.SpDB.Passwd == "" {
+		cfg.SpDB.User = "test"
+	}
+	if cfg.SpDB.Address == "" {
+		cfg.SpDB.User = "127.0.0.1:3306"
+	}
+	if cfg.SpDB.Database == "" {
+		cfg.SpDB.Database = "storage_provider_db"
+	}
+	dbCfg := &cfg.SpDB
+	db, err := sqldb.NewSpDB(dbCfg)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
