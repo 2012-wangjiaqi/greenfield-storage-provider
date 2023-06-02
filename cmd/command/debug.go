@@ -73,7 +73,7 @@ var DebugPutObjectCmd = &cli.Command{
 	Usage:  "Create random ObjectInfo and send to uploader for debugging and testing uploading primary sp",
 	Flags: []cli.Flag{
 		utils.ConfigFileFlag,
-		numberFlag,
+		fileFlag,
 	},
 	Category: "DEBUG COMMANDS",
 	Description: `The debug.put.object command create a random ObjectInfo 
@@ -187,12 +187,14 @@ func putObjectAction(ctx *cli.Context) error {
 	if len(data) > 16*1024*1024 {
 		return fmt.Errorf("debug upload data too big size [%d], limit[%d]", len(data), 16*1024*1024)
 	}
+	checksum := hash.GenerateChecksum(data)
+	integrity := hash.GenerateIntegrityHash([][]byte{checksum})
 	objectInfo := &storagetypes.ObjectInfo{
 		Id:          sdk.NewUint(uint64(util.RandInt64(0, 100000))),
 		BucketName:  DebugCommandPrefix + util.GetRandomBucketName(),
 		ObjectName:  DebugCommandPrefix + filePath,
 		PayloadSize: uint64(len(data)),
-		Checksums:   [][]byte{hash.GenerateChecksum(data)},
+		Checksums:   [][]byte{integrity},
 	}
 	params := &storagetypes.Params{
 		VersionedParams: storagetypes.VersionedParams{
