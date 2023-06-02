@@ -108,7 +108,6 @@ func init() {
 		command.P2PCreateKeysCmd,
 		// miscellaneous category commands
 		VersionCmd,
-		command.ListModularCmd,
 		// debug commands
 		command.DebugCreateBucketApprovalCmd,
 		command.DebugCreateObjectApprovalCmd,

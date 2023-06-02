@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bnb-chain/greenfield-common/go/hash"
 	"github.com/bnb-chain/greenfield-storage-provider/base/types/gfsptask"
 	"github.com/bnb-chain/greenfield-storage-provider/cmd/utils"
 	"github.com/bnb-chain/greenfield-storage-provider/core/spdb"
@@ -20,6 +21,12 @@ const (
 	DebugCommandPrefix = "gfsp-cli-debug-"
 )
 
+var fileFlag = &cli.StringFlag{
+	Name:     "f",
+	Usage:    "The file of uploading",
+	Required: true,
+}
+
 var DebugCreateBucketApprovalCmd = &cli.Command{
 	Action: createBucketApproval,
 	Name:   "debug.create.bucket.approval",
@@ -31,6 +38,46 @@ var DebugCreateBucketApprovalCmd = &cli.Command{
 	Description: `The debug.create.bucket.approval command create a random 
 CreateBucketApproval request and send it to approver for debugging and testing
 the approver on Dev Env.`,
+}
+
+var DebugCreateObjectApprovalCmd = &cli.Command{
+	Action: createObjectApproval,
+	Name:   "debug.create.object.approval",
+	Usage:  "Create random CreateObjectApproval and send to approver for debugging and testing",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+	},
+	Category: "DEBUG COMMANDS",
+	Description: `The debug.create.object.approval command create a random 
+CreateObjectApproval request and send it to approver for debugging and testing
+the approver on Dev Env.`,
+}
+
+var DebugReplicateApprovalCmd = &cli.Command{
+	Action: replicatePieceApprovalAction,
+	Name:   "debug.replicate.approval",
+	Usage:  "Create random ObjectInfo and send to p2p for debugging and testing p2p protocol network",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		numberFlag,
+	},
+	Category: "DEBUG COMMANDS",
+	Description: `The debug.ask.replicate.approval command create a random 
+ObjectInfo and send it to p2p node for debugging and testing p2p protocol 
+network on Dev Env.`,
+}
+
+var DebugPutObjectCmd = &cli.Command{
+	Action: putObjectAction,
+	Name:   "debug.put.object",
+	Usage:  "Create random ObjectInfo and send to uploader for debugging and testing uploading primary sp",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		numberFlag,
+	},
+	Category: "DEBUG COMMANDS",
+	Description: `The debug.put.object command create a random ObjectInfo 
+and send it to uploader for debugging and testing upload primary sp on Dev Env.`,
 }
 
 // createBucketApproval is the debug.create.bucket.approval command action.
@@ -57,19 +104,6 @@ func createBucketApproval(ctx *cli.Context) error {
 	fmt.Printf("succeed to ask create bucket approval, BucketName: %s, ExpiredHeight: %d \n",
 		res.GetCreateBucketInfo().GetBucketName(), res.GetCreateBucketInfo().GetPrimarySpApproval().GetExpiredHeight())
 	return nil
-}
-
-var DebugCreateObjectApprovalCmd = &cli.Command{
-	Action: createObjectApproval,
-	Name:   "debug.create.object.approval",
-	Usage:  "Create random CreateObjectApproval and send to approver for debugging and testing",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-	},
-	Category: "DEBUG COMMANDS",
-	Description: `The debug.create.object.approval command create a random 
-CreateObjectApproval request and send it to approver for debugging and testing
-the approver on Dev Env.`,
 }
 
 // createBucketApproval is the debug.create.bucket.approval command action.
@@ -100,20 +134,6 @@ func createObjectApproval(ctx *cli.Context) error {
 	return nil
 }
 
-var DebugReplicateApprovalCmd = &cli.Command{
-	Action: replicatePieceApprovalAction,
-	Name:   "debug.ask.replicate.approval",
-	Usage:  "Create random ObjectInfo and send to p2p for debugging and testing p2p protocol network",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		number,
-	},
-	Category: "DEBUG COMMANDS",
-	Description: `The debug.ask.replicate.approval command create a random 
-ObjectInfo and send it to p2p node for debugging and testing p2p protocol 
-network on Dev Env.`,
-}
-
 // createBucketApproval is the debug.create.bucket.approval command action.
 func replicatePieceApprovalAction(ctx *cli.Context) error {
 	cfg, err := utils.MakeConfig(ctx)
@@ -131,7 +151,7 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 	task.InitApprovalReplicatePieceTask(objectInfo, &storagetypes.Params{},
 		coretask.UnSchedulingPriority, GfSpCliUserName)
 
-	expectNumber := ctx.Int(number.Name)
+	expectNumber := ctx.Int(numberFlag.Name)
 	approvals, err := client.AskSecondaryReplicatePieceApproval(
 		context.Background(), task, expectNumber, expectNumber, 10)
 	if err != nil {
@@ -153,41 +173,26 @@ func replicatePieceApprovalAction(ctx *cli.Context) error {
 	return nil
 }
 
-var file = &cli.StringFlag{
-	Name:     "f",
-	Usage:    "The file of uploading",
-	Required: true,
-}
-
-var DebugPutObjectCmd = &cli.Command{
-	Action: putObjectAction,
-	Name:   "debug.put.object",
-	Usage:  "Create random ObjectInfo and send to uploader for debugging and testing uploading primary sp",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		file,
-	},
-	Category: "DEBUG COMMANDS",
-	Description: `The debug.put.object command create a random ObjectInfo 
-and send it to uploader for debugging and testing upload primary sp on Dev Env.`,
-}
-
 func putObjectAction(ctx *cli.Context) error {
 	cfg, err := utils.MakeConfig(ctx)
 	if err != nil {
 		return err
 	}
 	client := utils.MakeGfSpClient(cfg)
-	filePath := ctx.String(file.Name)
+	filePath := ctx.String(fileFlag.Name)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
+	if len(data) > 16*1024*1024 {
+		return fmt.Errorf("debug upload data too big size [%d], limit[%d]", len(data), 16*1024*1024)
+	}
 	objectInfo := &storagetypes.ObjectInfo{
 		Id:          sdk.NewUint(uint64(util.RandInt64(0, 100000))),
 		BucketName:  DebugCommandPrefix + util.GetRandomBucketName(),
-		ObjectName:  filePath,
+		ObjectName:  DebugCommandPrefix + filePath,
 		PayloadSize: uint64(len(data)),
+		Checksums:   [][]byte{hash.GenerateChecksum(data)},
 	}
 	params := &storagetypes.Params{
 		VersionedParams: storagetypes.VersionedParams{
@@ -201,8 +206,8 @@ func putObjectAction(ctx *cli.Context) error {
 	task.InitUploadObjectTask(objectInfo, params, 0)
 	err = client.UploadObject(context.Background(), task, stream)
 	if err != nil {
-		return fmt.Errorf("failed to upload %d to uploader, error: %v", filePath, err)
+		return fmt.Errorf("failed to upload %s to uploader, error: %v", filePath, err)
 	}
-	fmt.Printf("succeed to upload %d, len %d to uploader", filePath, len(data))
+	fmt.Printf("succeed to upload %d, len %d to uploader\n", filePath, len(data))
 	return nil
 }

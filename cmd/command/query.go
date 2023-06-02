@@ -26,37 +26,6 @@ const (
 	GfSpCliUserName = "gfsp-cli"
 )
 
-var ListModularCmd = &cli.Command{
-	Action:      listModularAction,
-	Name:        "list.modules",
-	Usage:       "List the modules in greenfield storage provider",
-	Category:    "QUERY COMMANDS",
-	Description: `The list command output the services in greenfield storage provider.`,
-}
-
-func listModularAction(ctx *cli.Context) error {
-	fmt.Print(gfspapp.GetRegisterModulusDescription())
-	return nil
-}
-
-var ListErrorsCmd = &cli.Command{
-	Action:      listErrorsAction,
-	Name:        "list.errors",
-	Usage:       "List the predefine errors in greenfield storage provider",
-	Category:    "QUERY COMMANDS",
-	Description: `The list command output the services in greenfield storage provider.`,
-}
-
-func listErrorsAction(ctx *cli.Context) error {
-	gfspErrors := gfsperrors.GfSpErrorList()
-	var errInfo string
-	for _, gfspError := range gfspErrors {
-		fmt.Printf(gfspError.String() + "\n")
-	}
-	fmt.Printf(errInfo)
-	return nil
-}
-
 var endpointFlag = &cli.StringFlag{
 	Name:  "n",
 	Usage: "The address of machine that to query tasks",
@@ -67,6 +36,53 @@ var keyFlag = &cli.StringFlag{
 	Name:  "k",
 	Usage: "The sub key of task",
 	Value: "",
+}
+
+var objectIDFlag = &cli.StringFlag{
+	Name:     "i",
+	Usage:    "The ID key of Object",
+	Required: true,
+}
+
+var replicateIdxFlag = &cli.Int64Flag{
+	Name:     "r",
+	Usage:    "The object replicate index of SP",
+	Required: true,
+}
+
+var segmentIdxFlag = &cli.Uint64Flag{
+	Name:     "s",
+	Usage:    "The segment index",
+	Required: true,
+}
+
+var ListModularCmd = &cli.Command{
+	Action:      listModularAction,
+	Name:        "list.modules",
+	Usage:       "List the modules in greenfield storage provider",
+	Category:    "QUERY COMMANDS",
+	Description: `The list command output the services in greenfield storage provider.`,
+}
+
+var ListErrorsCmd = &cli.Command{
+	Action:      listErrorsAction,
+	Name:        "list.errors",
+	Usage:       "List the predefine errors in greenfield storage provider",
+	Category:    "QUERY COMMANDS",
+	Description: `The list command output the services in greenfield storage provider.`,
+}
+
+var GetObjectCmd = &cli.Command{
+	Action: getObjectAction,
+	Name:   "get.object",
+	Usage:  "Get object payload data",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		objectIDFlag,
+	},
+	Category: "QUERY COMMANDS",
+	Description: `The get.object command send rpc request to downloader 
+server to get object payload data`,
 }
 
 var QueryTaskCmd = &cli.Command{
@@ -81,6 +97,49 @@ var QueryTaskCmd = &cli.Command{
 	},
 	Description: `Query running tasks in modules by task sub key, 
 show the tasks that task key contains the inout key detail info`,
+}
+
+var ChallengePieceCmd = &cli.Command{
+	Action: challengePieceAction,
+	Name:   "challenge.piece",
+	Usage:  "Challenge piece integrity hash",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		objectIDFlag,
+		replicateIdxFlag,
+		segmentIdxFlag,
+	},
+	Category: "QUERY COMMANDS",
+	Description: `The challenge.piece command send rpc request to downloader 
+get integrity meta and check the piece checksums.`,
+}
+
+var GetSegmentIntegrityCmd = &cli.Command{
+	Action: getSegmentIntegrityAction,
+	Name:   "get.piece.integrity",
+	Usage:  "Get piece integrity hash and signature",
+	Flags: []cli.Flag{
+		utils.ConfigFileFlag,
+		objectIDFlag,
+	},
+	Category: "QUERY COMMANDS",
+	Description: `The get.segment.integrity command send rpc request to spdb 
+get integrity hash and signature.`,
+}
+
+func listModularAction(ctx *cli.Context) error {
+	fmt.Print(gfspapp.GetRegisterModulusDescription())
+	return nil
+}
+
+func listErrorsAction(ctx *cli.Context) error {
+	gfspErrors := gfsperrors.GfSpErrorList()
+	var errInfo string
+	for _, gfspError := range gfspErrors {
+		fmt.Printf(gfspError.String() + "\n")
+	}
+	fmt.Printf(errInfo)
+	return nil
 }
 
 func queryTasksAction(ctx *cli.Context) error {
@@ -116,25 +175,6 @@ func queryTasksAction(ctx *cli.Context) error {
 		fmt.Printf(info + "\n")
 	}
 	return nil
-}
-
-var objectIDFlag = &cli.StringFlag{
-	Name:     "i",
-	Usage:    "The ID key of Object",
-	Required: true,
-}
-
-var GetObjectCmd = &cli.Command{
-	Action: getObjectAction,
-	Name:   "get.object",
-	Usage:  "Get object payload data",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		objectIDFlag,
-	},
-	Category: "QUERY COMMANDS",
-	Description: `The get.object command send rpc request to downloader 
-server to get object payload data`,
 }
 
 func getObjectAction(ctx *cli.Context) error {
@@ -177,33 +217,6 @@ func getObjectAction(ctx *cli.Context) error {
 		"StorageParam: %s\n\n",
 		bucketInfo.String(), objectInfo.String(), params.String())
 	return nil
-}
-
-var replicateIdxFlag = &cli.Int64Flag{
-	Name:     "r",
-	Usage:    "The object replicate index of SP",
-	Required: true,
-}
-
-var segmentIdxFlag = &cli.Uint64Flag{
-	Name:     "s",
-	Usage:    "The segment index",
-	Required: true,
-}
-
-var ChallengePieceCmd = &cli.Command{
-	Action: challengePieceAction,
-	Name:   "challenge.piece",
-	Usage:  "Challenge piece integrity hash",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		objectIDFlag,
-		replicateIdxFlag,
-		segmentIdxFlag,
-	},
-	Category: "QUERY COMMANDS",
-	Description: `The challenge.piece command send rpc request to downloader 
-get integrity meta and check the piece checksums.`,
 }
 
 func challengePieceAction(ctx *cli.Context) error {
@@ -262,19 +275,6 @@ func challengePieceAction(ctx *cli.Context) error {
 	}
 	fmt.Printf("succeed to check integrity hash!!!\n")
 	return nil
-}
-
-var GetSegmentIntegrityCmd = &cli.Command{
-	Action: getSegmentIntegrityAction,
-	Name:   "get.piece.integrity",
-	Usage:  "Get piece integrity hash and signature",
-	Flags: []cli.Flag{
-		utils.ConfigFileFlag,
-		objectIDFlag,
-	},
-	Category: "QUERY COMMANDS",
-	Description: `The get.segment.integrity command send rpc request to spdb 
-get integrity hash and signature.`,
 }
 
 func getSegmentIntegrityAction(ctx *cli.Context) error {
