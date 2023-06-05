@@ -5,9 +5,9 @@ The ResourceManager tracks and accounts for resource usage in the stack,
 from the internals to the application, and provides a mechanism to limit
 resource usage according to a user configurable policy.
 
-# Concept
+## Concept
 
-## Limit
+### Limit
 
 The modus operandi of the resource manager is to restrict resource usage 
 at the time of reservation. When a component of the stack needs to use a 
@@ -33,11 +33,12 @@ to be executed, and the resources will be assigned priority for execution, for e
 seal object. The lower the priority, it can be executed later, and the resource 
 requirements are not so urgent, for example: delayed deletion.
 
-## Scope
+### Scope
 
 Resource Management through the ResourceManager is based on the concept of Resource 
 Management Scopes, whereby resource usage is constrained by a DAG of scopes, The following 
 diagram illustrates the structure of the resource constraint DAG:
+
 ```
 System(Topmost Scope)
 
@@ -56,7 +57,8 @@ on(points to) System Scope, Service A reserves the resources, the System Scope w
 the corresponding amount of resources. On the contrary, if the System Scope reserves resources,
 it will not affect Service A.
 
-# Example
+## Example
+
 ```go
     rcmgr := &ResourceManager{}
     serviceScope, err := rcmgr.OpenService(...)

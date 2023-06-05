@@ -1,15 +1,13 @@
-# ServiceLifecycle
+# Lifecycle
 
-ServiceLifecycle is the interface to the service life cycle management subsystem.
-The ServiceLifecycle tracks the Service life cycle, listens to the signal of the
-process for graceful exit.
+Lifecycle interface manages the lifecycle of a service and tracks its state changes. It also listens for signals from
+the process to ensure a graceful shutdown.
 
-# Concept
+## Concept
 
-## Service
+### Service Interface
 
-Service is the interface for ServiceLifecycle to manage. The component that plans 
-to use ServiceLifecycle needs to implement the interface.
+Service is an interface for Lifecycle to manage. The component that plans to use Lifecycle needs to implement this interface.
 
 ```go
 // Service is the interface for ServiceLifecycle to manage.
