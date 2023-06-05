@@ -16,6 +16,7 @@ const (
 	KeyPrefixGfSpDownloadPieceTask          = "DownloadPiece"
 	KeyPrefixGfSpChallengeTask              = "ChallengePiece"
 	KeyPrefixGfSpUploadObjectTask           = "Uploading"
+	KeyPrefixGfSpResumableUploadObjectTask  = "ResuabmleUploading"
 	KeyPrefixGfSpReplicatePieceTask         = "Replicating"
 	KeyPrefixGfSpSealObjectTask             = "Sealing"
 	KeyPrefixGfSpReceivePieceTask           = "ReceivePiece"
@@ -56,6 +57,10 @@ func GfSpChallengePieceTaskKey(bucket, object, id string, sIdx uint32, rIdx int3
 
 func GfSpUploadObjectTaskKey(bucket, object, id string) task.TKey {
 	return task.TKey(KeyPrefixGfSpUploadObjectTask + CombineKey(bucket, object, id))
+}
+
+func GfSpResumableUploadObjectTaskKey(bucket, object, id string) task.TKey {
+	return task.TKey(KeyPrefixGfSpResumableUploadObjectTask + CombineKey(bucket, object, id))
 }
 
 func GfSpReplicatePieceTaskKey(bucket, object, id string) task.TKey {
