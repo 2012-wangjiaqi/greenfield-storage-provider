@@ -2,6 +2,10 @@ package bsdb
 
 import (
 	"fmt"
+	"gorm.io/gorm/logger"
+	syslog "log"
+	"os"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -38,7 +42,15 @@ func NewBsDB(cfg *gfspconfig.GfSpConfig, isBackup bool) (*BsDBImpl, error) {
 func InitDB(config *config.SQLDBConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		config.User, config.Passwd, config.Address, config.Database)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		syslog.New(os.Stdout, "\r\n", syslog.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			LogLevel:      logger.Info, // Log level
+			Colorful:      true,        // Disable color
+		},
+	)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger})
 	if err != nil {
 		log.Errorw("gorm failed to open db", "error", err)
 		return nil, err
