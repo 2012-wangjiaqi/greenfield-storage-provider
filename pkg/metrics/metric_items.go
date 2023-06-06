@@ -32,6 +32,7 @@ var MetricsItems = []prometheus.Collector{
 	DownloadObjectSizeHistogram,
 	ChallengePieceSizeHistogram,
 	ReceivePieceSizeHistogram,
+	PerfUploadTimeHistogram,
 	// TaskExecutor metrics category
 	MaxTaskNumberGauge,
 	RunningTaskNumberGauge,
