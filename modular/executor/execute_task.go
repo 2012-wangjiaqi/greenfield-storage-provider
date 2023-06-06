@@ -264,6 +264,9 @@ func (e *ExecuteModular) HandleGCObjectTask(ctx context.Context, task coretask.G
 
 func (e *ExecuteModular) HandleGCZombiePieceTask(ctx context.Context, task coretask.GCZombiePieceTask) {
 	log.CtxWarn(ctx, "gc zombie piece future support")
+
+	// TODO:
+	// scan signature db,
 }
 
 func (e *ExecuteModular) HandleGCMetaTask(ctx context.Context, task coretask.GCMetaTask) {

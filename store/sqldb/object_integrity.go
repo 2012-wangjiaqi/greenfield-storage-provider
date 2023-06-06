@@ -82,6 +82,10 @@ func (s *SpDBImpl) DeleteObjectIntegrity(objectID uint64) error {
 	}).Error
 }
 
+func (s *SpDBImpl) ScanObjectIntegrity(startObjectID uint64, limit int) ([]*corespdb.IntegrityMeta, error) {
+	return nil, nil
+}
+
 // GetReplicatePieceChecksum gets replicate piece checksum.
 func (s *SpDBImpl) GetReplicatePieceChecksum(objectID uint64, replicateIdx uint32, pieceIdx uint32) ([]byte, error) {
 	var (
